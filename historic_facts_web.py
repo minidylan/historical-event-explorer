@@ -2,13 +2,13 @@ import requests
 import random
 import streamlit as st
 
-# API URLs and configurations
+# API keys - replace with actual keys once you have them
 HISTORICAL_EVENTS_API_KEY = 'AELODrSUbplSOvWhZGOXwA==8y6wpe5HcQKm2hCf'
 YOUTUBE_API_KEY = 'AIzaSyAtnErcjqnaTV_b6npMna5sB5LR5rk6n9A'
 YOUTUBE_SEARCH_URL = 'https://www.googleapis.com/youtube/v3/search'
 WIKIPEDIA_SEARCH_URL = "https://en.wikipedia.org/wiki/"
 HISTORICAL_EVENTS_API_URL = 'https://api.api-ninjas.com/v1/historicalevents'
-OPEN_LIBRARY_SEARCH_URL = 'https://openlibrary.org/search.json'
+GOOGLE_BOOKS_API_URL = 'https://www.googleapis.com/books/v1/volumes'
 
 # Function to fetch a random historical event within a specific date range
 def get_random_historical_event(start_year, end_year):
@@ -55,22 +55,21 @@ def get_history_com_search_link(event):
     main_topic = event.split(',')[0].replace(' ', '+')  # Use + for spaces in History.com search
     return f"https://www.history.com/search?q={main_topic}"
 
-# Function to get book recommendations using Open Library API
+# Function to get book recommendations using Google Books API (without API key)
 def get_book_recommendations(query):
     params = {
         'q': query,
-        'limit': 3
+        'maxResults': 3
     }
-    response = requests.get(OPEN_LIBRARY_SEARCH_URL, params=params)
+    response = requests.get(GOOGLE_BOOKS_API_URL, params=params)
 
     if response.status_code == 200:
-        books = response.json().get('docs', [])
+        books = response.json().get('items', [])
         recommendations = []
         for book in books:
-            title = book.get('title', 'No Title')
-            authors = book.get('author_name', ['Unknown Author'])
-            key = book.get('key', '')
-            link = f"https://openlibrary.org{key}" if key else "No Link Available"
+            title = book['volumeInfo'].get('title', 'No Title')
+            authors = book['volumeInfo'].get('authors', ['Unknown Author'])
+            link = book['volumeInfo'].get('infoLink', 'No Link Available')
             recommendations.append({'title': title, 'authors': ', '.join(authors), 'link': link})
         return recommendations
     else:
