@@ -4,7 +4,8 @@ import streamlit as st
 
 # API keys - replace with actual keys once you have them
 HISTORICAL_EVENTS_API_KEY = 'AELODrSUbplSOvWhZGOXwA==8y6wpe5HcQKm2hCf'
-GOOGLE_BOOKS_API_URL = 'https://www.googleapis.com/books/v1/volumes'
+GOOGLE_BOOKS_API_KEY = 'AIzaSyAlYqjRu8nZaH5ZxYm4rcWBgY8wCO8SZPA'  # Your Google Books API key here
+GOOGLE_BOOKS_API_URL = 'https://www.googleapis.com/books/v1/volumes'  # The base URL for Google Books API
 YOUTUBE_API_KEY = 'AIzaSyAtnErcjqnaTV_b6npMna5sB5LR5rk6n9A'
 YOUTUBE_SEARCH_URL = 'https://www.googleapis.com/youtube/v3/search'
 WIKIPEDIA_SEARCH_URL = "https://en.wikipedia.org/wiki/"
@@ -59,7 +60,8 @@ def get_history_com_search_link(event):
 def get_book_recommendations(query):
     params = {
         'q': query,
-        'maxResults': 3
+        'maxResults': 3,
+        'key': GOOGLE_BOOKS_API_KEY  # Include your API key in the request
     }
     response = requests.get(GOOGLE_BOOKS_API_URL, params=params)
 
@@ -72,6 +74,9 @@ def get_book_recommendations(query):
             link = book['volumeInfo'].get('infoLink', 'No Link Available')
             recommendations.append({'title': title, 'authors': ', '.join(authors), 'link': link})
         return recommendations
+    elif response.status_code == 403:
+        st.error("Access to the Google Books API was forbidden. Please check your API key or quota.")
+        return []
     else:
         st.error(f"Failed to retrieve books. Status code: {response.status_code}")
         return []
