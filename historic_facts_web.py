@@ -10,10 +10,11 @@ YOUTUBE_SEARCH_URL = 'https://www.googleapis.com/youtube/v3/search'
 WIKIPEDIA_SEARCH_URL = "https://en.wikipedia.org/wiki/"
 HISTORICAL_EVENTS_API_URL = 'https://api.api-ninjas.com/v1/historicalevents'
 
-# Function to fetch a random historical event
-def get_random_historical_event():
-    for _ in range(10):
-        year = random.randint(1700, 2023)
+# Function to fetch a random historical event within a specific date range
+def get_random_historical_event(start_year, end_year):
+    attempts = 20  # Number of attempts to find a valid event
+    for _ in range(attempts):
+        year = random.randint(start_year, end_year)
         month = random.randint(1, 12)
         day = random.randint(1, 28)
 
@@ -28,12 +29,12 @@ def get_random_historical_event():
                 event = random.choice(events)
                 return int(event['year']), int(event['month']), int(event['day']), event['event']
             else:
-                st.warning("No events found for this date.")
+                continue  # Try another date
         else:
             st.error(f"Failed to retrieve events. Status code: {response.status_code}")
             return None
 
-    st.warning("No events found after multiple attempts.")
+    st.warning("No events found after multiple attempts. Please try again.")
     return None
 
 def clean_query(query):
@@ -143,8 +144,24 @@ def display_event_and_resources(year, month, day, event):
 def main():
     st.title("Random Historical Event Explorer")
 
+    # Dropdown for selecting the time period
+    period = st.selectbox("Select a time period:", 
+                          ["1700s", "1800s", "1900s", "2000s", "All time periods"])
+
+    # Map the selected period to a date range
+    if period == "1700s":
+        start_year, end_year = 1700, 1799
+    elif period == "1800s":
+        start_year, end_year = 1800, 1899
+    elif period == "1900s":
+        start_year, end_year = 1900, 1999
+    elif period == "2000s":
+        start_year, end_year = 2000, 2023
+    else:  # "All time periods"
+        start_year, end_year = 1700, 2023
+
     if st.button("Get Random Historical Event"):
-        event_info = get_random_historical_event()
+        event_info = get_random_historical_event(start_year, end_year)
         if event_info:
             year, month, day, event = event_info
             display_event_and_resources(year, month, day, event)
