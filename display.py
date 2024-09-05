@@ -9,20 +9,22 @@ from data_sources import (
     get_wikipedia_search_link
 )
 
-def display_event_and_resources(day, month, year, event):
-    # Handle None or unexpected values for month and year
-    if month is None or not isinstance(month, int):
-        month_name = "Unknown"
-    elif 1 <= month <= 12:
-        month_name = calendar.month_name[month]
-    else:
-        month_name = "Unknown"
+import streamlit as st
 
-    # Format the date as "Day Month Year" or handle missing month
-    if month_name == "Unknown":
-        formatted_date = f"{day} {year}"  # Skip the month if it's unknown
+def display_event_and_resources(day, month, year, event):
+    # Handle None or missing day, month, or year by checking if they are empty strings or None
+    if day is None or day == "":
+        day = "Unknown"
+    if month is None or month == "":
+        month = "Unknown"
+    if year is None or year == "":
+        year = "Unknown"
+
+    # Format the date as "DD-MM-YYYY"
+    if month == "Unknown" or day == "Unknown":
+        formatted_date = f"{year}"  # Only show year if day or month is unknown
     else:
-        formatted_date = f"{day} {month_name} {year}"
+        formatted_date = f"{day}-{month}-{year}"
 
     st.header(f"Date: {formatted_date}")
     st.subheader("Event")
@@ -31,7 +33,7 @@ def display_event_and_resources(day, month, year, event):
     st.subheader("Learn More from Alternative Links")
     
     # Fetch and display Wikipedia article
-    title, summary, link = get_wikipedia_article(event.split(',')[0])  # Use the first part of the event as the query
+    title, summary, link = get_wikipedia_article(event.split(',')[0])
     if title and summary:
         st.markdown(f"**{title}**")
         st.write(summary)
