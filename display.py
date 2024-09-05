@@ -1,5 +1,5 @@
+import re
 import streamlit as st
-import calendar
 from data_sources import (
     get_wikipedia_article, 
     get_google_books, 
@@ -9,10 +9,39 @@ from data_sources import (
     get_wikipedia_search_link
 )
 
-import streamlit as st
+def extract_search_query(event):
+    """
+    Extract a meaningful search query from the event description.
+    Focus on specific historical terms like 'Battle', 'War', 'Revolution', etc.
+    If the event mentions 'Name of person:', extract the name for the search.
+    """
+    # Look for the "Name of person:" pattern
+    person_match = re.search(r'Name of person:\s*([A-Za-z\s]+)', event)
+    if person_match:
+        person_name = person_match.group(1).strip()
+        return person_name  # Return the person's name as the search query
+
+    # Extract the year from the event (look for a 4-digit year)
+    year_match = re.search(r'\b\d{4}\b', event)
+    year = year_match.group(0) if year_match else ""
+
+    # Define historical keywords to look for in the event description
+    keywords = ["battle", "war", "revolution", "earthquake", "massacre", "treaty", "rebellion", "siege", "conference", "incident", "campaign"]
+
+    # Look for the keyword in the event description and extract the phrase that contains it
+    for word in keywords:
+        if word in event.lower():
+            # Extract the phrase around the keyword (e.g., 'First Battle of Bud Dajo')
+            match = re.search(rf'(\b[A-Za-z0-9\'\s]+{word}[A-Za-z0-9\'\s]*)', event, re.IGNORECASE)
+            if match:
+                return f"{match.group(0)} {year}".strip()  # Combine with year if available
+
+    # If no keywords are found, fallback to using the first part of the event
+    location_words = event.split(',')[0].split()[0:5]  # First 5 words for location/event type
+    return " ".join(location_words + [year]).strip()
 
 def display_event_and_resources(day, month, year, event):
-    # Handle None or missing day, month, or year by checking if they are empty strings or None
+    # Handle None or missing day, month, or year
     if day is None or day == "":
         day = "Unknown"
     if month is None or month == "":
@@ -30,10 +59,15 @@ def display_event_and_resources(day, month, year, event):
     st.subheader("Event")
     st.write(event)
 
+    # Extract search query from the event description
+    search_query = extract_search_query(event)
+
+    st.subheader(f"Search Query: {search_query}")  # Display the search query for debugging purposes
+
     st.subheader("Learn More from Alternative Links")
-    
-    # Fetch and display Wikipedia article
-    title, summary, link = get_wikipedia_article(event.split(',')[0])
+
+    # Fetch and display Wikipedia article using the search query
+    title, summary, link = get_wikipedia_article(search_query)
     if title and summary:
         st.markdown(f"**{title}**")
         st.write(summary)
@@ -41,14 +75,14 @@ def display_event_and_resources(day, month, year, event):
     else:
         st.write("No related Wikipedia article found.")
 
-    # Alternative links for Britannica and History.com
-    st.markdown(f"[Search on Wikipedia]({get_wikipedia_search_link(event)})")
-    st.markdown(f"[Search on Britannica]({get_britannica_search_link(event)})")
-    st.markdown(f"[Search on History.com]({get_history_com_search_link(event)})")
+    # Alternative search links for Britannica and History.com using the search query
+    st.markdown(f"[Search on Wikipedia]({get_wikipedia_search_link(search_query)})")
+    st.markdown(f"[Search on Britannica]({get_britannica_search_link(search_query)})")
+    st.markdown(f"[Search on History.com]({get_history_com_search_link(search_query)})")
 
     # Book Recommendations
     st.subheader("Book Recommendations")
-    recommendations = get_google_books(event)
+    recommendations = get_google_books(search_query)
     if recommendations:
         for book in recommendations:
             st.markdown(f"**{book['title']}** by {book['authors']}")
@@ -58,7 +92,7 @@ def display_event_and_resources(day, month, year, event):
 
     # YouTube Video Recommendations
     st.subheader("YouTube Videos")
-    videos = get_youtube_videos(event)
+    videos = get_youtube_videos(search_query)
     if videos:
         for video in videos:
             st.markdown(f"**{video['title']}**")
